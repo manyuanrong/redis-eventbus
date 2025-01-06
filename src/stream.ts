@@ -85,7 +85,7 @@ export class EventStream {
           if (!message[1][0]) continue
           const messageId = message[1][0][0]
           const messageValue = message[1][0][1]
-          const [_key, value] = messageValue
+          const [, value] = messageValue
 
           try {
             await this.options.handler(EJSON.parse(value))

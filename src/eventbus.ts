@@ -98,24 +98,22 @@ export class EventBus {
       )) as any[][]
 
       // 删除所有不活跃的消费者
-      consumers.forEach(
-        ([_nameKey, name, _pendingKey, _pending, _idleKey, idle]) => {
-          if (idle > this.options.streamTTL) {
-            this.redis.xgroup(
-              'DELCONSUMER',
-              streamKey,
-              stream.getGroupKey(),
-              name
-            )
-          }
+      consumers.forEach(([, name, , , , idle]) => {
+        if (idle > this.options.streamTTL) {
+          this.redis.xgroup(
+            'DELCONSUMER',
+            streamKey,
+            stream.getGroupKey(),
+            name
+          )
         }
-      )
+      })
 
       // 广播模式需要清理不活跃的消费组
       if (stream === this.streams[EventMode.BROADCAST]) {
         // 找出不活跃的消费组并删除
         const groups = (await this.redis.xinfo('GROUPS', streamKey)) as any[][]
-        groups.forEach(([_name, name]) => {
+        groups.forEach(([, name]) => {
           const instanceId = name.replace(this.keyPrefix, '')
           // 如果消费组对应的unicast stream不存在说明该消费组不活跃，则删消费组
           const unicastStreamKey = this.keyPrefix + 'unicast:' + instanceId
