@@ -1,5 +1,5 @@
 {
-  "name": "redis-eventbus",
+  "name": "node-redis-eventbus",
   "version": "1.0.0",
   "description": "An event bus based on Redis streams",
   "main": "dist/index.js",
