@@ -1,5 +1,6 @@
 import EJSON from 'ejson'
 import { Redis } from 'ioredis'
+import { ulid } from 'ulidx'
 import { EventStream } from './stream'
 import {
   EventBusOptions,
@@ -29,7 +30,7 @@ export class EventBus {
       maxMessageCount: options.maxMessageCount ?? 5000,
     }
     this.redis = new Redis({ ...this.options.redis, lazyConnect: true })
-    this.instanceId = crypto.randomUUID().replace(/-/g, '')
+    this.instanceId = ulid()
 
     this.keyPrefix = `eventbus:${this.options.name}:`
     this.streams = {

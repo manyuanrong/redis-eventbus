@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "ejson": "^2.2.3",
-    "ioredis": "^5.3.2"
+    "ioredis": "^5.3.2",
+    "ulidx": "^2.4.1"
   },
   "devDependencies": {
     "@types/ejson": "^2.2.2",
