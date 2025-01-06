@@ -2,7 +2,7 @@
 
 [![Test](https://github.com/manyuanrong/redis-eventbus/actions/workflows/test.yml/badge.svg)](https://github.com/manyuanrong/redis-eventbus/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/manyuanrong/redis-eventbus/branch/main/graph/badge.svg)](https://codecov.io/gh/manyuanrong/redis-eventbus)
-[![npm version](https://badge.fury.io/js/node-redis-eventbus.svg)](https://badge.fury.io/js/node-redis-eventbus)
+[![npm version](https://badge.fury.io/js/eventbus-redis.svg)](https://badge.fury.io/js/eventbus-redis)
 
 基于 Redis Streams 实现的分布式事件总线，支持三种消息分发模式。
 
@@ -35,13 +35,13 @@
 ## 安装
 
 ```bash
-npm install node-redis-eventbus
+npm install eventbus-redis
 ```
 
 ## 快速开始
 
 ```ts
-import { EventBus, EventMode } from 'node-redis-eventbus'
+import { EventBus, EventMode } from 'eventbus-redis'
 // 创建实例
 const eventBus = new EventBus({
   redis: {
