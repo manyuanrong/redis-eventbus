@@ -47,13 +47,10 @@ jobs:
           REDIS_PORT: 6379
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: true
+          slug: manyuanrong/redis-eventbus
 
   build:
     runs-on: ubuntu-latest
