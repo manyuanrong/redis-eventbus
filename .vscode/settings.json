@@ -5,10 +5,13 @@
         "manyuanrong",
         "MAXLEN",
         "MKSTREAM",
+        "ulidx",
         "xack",
         "xadd",
         "xgroup",
         "xinfo",
+        "xpending",
+        "xrange",
         "xreadgroup",
         "xtrim"
     ]

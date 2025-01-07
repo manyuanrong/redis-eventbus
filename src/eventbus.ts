@@ -4,6 +4,7 @@ import { ulid } from 'ulidx'
 import { EventStream } from './stream'
 import {
   EventBusOptions,
+  EventBusRole,
   EventHandler,
   EventMessage,
   EventMode,
@@ -18,6 +19,7 @@ export class EventBus {
   private options: Required<EventBusOptions>
   private handlers: Map<string, Set<EventHandler>> = new Map()
   private maintenanceTimer?: ReturnType<typeof setInterval>
+  private role: EventBusRole
 
   constructor(options: EventBusOptions) {
     this.options = {
@@ -28,6 +30,7 @@ export class EventBus {
       onlyNew: options.onlyNew ?? false,
       debug: options.debug ?? false,
       maxMessageCount: options.maxMessageCount ?? 5000,
+      role: options.role ?? 'both',
     }
     this.redis = new Redis({ ...this.options.redis, lazyConnect: true })
     this.instanceId = ulid()
@@ -44,6 +47,7 @@ export class EventBus {
         onlyNew: this.options.onlyNew,
         handler: this.handleMessage.bind(this),
         messageRetention: this.options.messageRetention,
+        waitHandler: true,
       }),
       // 广播 stream, 所有订阅者共享消息，消息会被每个订阅者消费一次
       [EventMode.BROADCAST]: new EventStream({
@@ -55,6 +59,7 @@ export class EventBus {
         onlyNew: this.options.onlyNew,
         handler: this.handleMessage.bind(this),
         messageRetention: this.options.messageRetention,
+        waitHandler: false,
       }),
       // 单播 stream, 只有指定目标会收到消息，并被指定目标消费一次
       [EventMode.UNICAST]: new EventStream({
@@ -66,8 +71,11 @@ export class EventBus {
         onlyNew: this.options.onlyNew,
         handler: this.handleMessage.bind(this),
         messageRetention: this.options.messageRetention,
+        waitHandler: false,
       }),
     }
+
+    this.role = options.role || 'both'
   }
 
   private async handleMessage(message: ReceivedEventMessage) {
@@ -122,14 +130,19 @@ export class EventBus {
             if (exists === 0) {
               // 二次确认，防止其他实例还未完整初始化
               setTimeout(() => {
-                this.redis.exists(unicastStreamKey).then((exists) => {
-                  if (exists === 0) {
-                    if (this.options.debug) {
-                      console.log('delete group', name)
+                this.redis
+                  .exists(unicastStreamKey)
+                  .then((exists) => {
+                    if (exists === 0) {
+                      if (this.options.debug) {
+                        console.log('delete group', name)
+                      }
+                      this.redis
+                        .xgroup('DESTROY', streamKey, name)
+                        .catch(() => 0)
                     }
-                    this.redis.xgroup('DESTROY', streamKey, name).catch(() => 0)
-                  }
-                })
+                  })
+                  .catch(() => 0)
               }, 2000)
             }
           })
@@ -139,9 +152,9 @@ export class EventBus {
   }
 
   private startMaintenanceTimer() {
-    this.maintainOnce()
+    this.maintainOnce().catch(() => 0)
     this.maintenanceTimer = setInterval(async () => {
-      await this.maintainOnce()
+      await this.maintainOnce().catch(() => 0)
     }, 30 * 1000)
   }
 
@@ -154,10 +167,14 @@ export class EventBus {
    */
   public async init() {
     await this.redis.connect()
-    await Promise.all(
-      Object.values(this.streams).map((stream) => stream.init())
-    )
-    this.startMaintenanceTimer()
+
+    // 只有消费者和双重角色才初始化消费组
+    if (this.role !== 'publisher') {
+      await Promise.all(
+        Object.values(this.streams).map((stream) => stream.init())
+      )
+      this.startMaintenanceTimer()
+    }
   }
 
   /**
@@ -200,6 +217,9 @@ export class EventBus {
    * @param handler 事件处理器
    */
   public on<T = any>(type: string, handler: EventHandler<T>): void {
+    if (this.role === 'publisher') {
+      throw new Error('Publisher cannot register event handlers')
+    }
     if (!this.handlers.has(type)) {
       this.handlers.set(type, new Set())
     }
@@ -227,6 +247,9 @@ export class EventBus {
    * @param handler 事件处理器
    */
   public once<T = any>(type: string, handler: EventHandler<T>): void {
+    if (this.role === 'publisher') {
+      throw new Error('Publisher cannot register event handlers')
+    }
     const wrappedHandler: EventHandler<T> = async (msg) => {
       try {
         await handler(msg)
@@ -245,5 +268,9 @@ export class EventBus {
     await Promise.all(
       Object.values(this.streams).map((stream) => stream.close())
     )
+  }
+
+  public get name() {
+    return this.options.name
   }
 }

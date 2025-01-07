@@ -11,6 +11,7 @@ interface EventStreamOptions {
   onlyNew: boolean
   handler: EventHandler
   messageRetention: number
+  waitHandler: boolean
 }
 
 /**
@@ -88,7 +89,13 @@ export class EventStream {
           const [, value] = messageValue
 
           try {
-            await this.options.handler(EJSON.parse(value))
+            if (this.options.waitHandler) {
+              await this.options.handler(EJSON.parse(value))
+            } else {
+              this.options.handler(EJSON.parse(value))?.catch((error) => {
+                console.error('Error processing message:', error)
+              })
+            }
           } catch (error) {
             console.error('Error processing message:', error)
           }

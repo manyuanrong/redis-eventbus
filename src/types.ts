@@ -18,7 +18,14 @@ export interface EventBusOptions {
   debug?: boolean
   /** 最大消息数量（默认 5000） */
   maxMessageCount?: number
+  /** 事件总线角色（默认both） */
+  role?: EventBusRole
 }
+
+/**
+ * 事件总线角色
+ */
+export type EventBusRole = 'publisher' | 'consumer' | 'both'
 
 /**
  * 事件处理器
